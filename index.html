@@ -26,9 +26,23 @@
             考えられる合理的配慮のヒントを表示します。
         </p>
 
+        <!-- 困り感の選択肢（プルダウン）を追加 -->
+        <div class="mb-4">
+            <label for="difficultySelect" class="block text-gray-700 text-sm font-medium mb-2">
+                カテゴリから選択
+            </label>
+            <select
+                id="difficultySelect"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-gray-800"
+            >
+                <option value="">-- カテゴリを選択してください --</option>
+                <!-- Options will be populated by JavaScript -->
+            </select>
+        </div>
+
         <div class="mb-6">
             <label for="difficultyInput" class="block text-gray-700 text-sm font-medium mb-2">
-                お子さんの具体的な「困り感」を入力
+                または具体的な「困り感」を入力
             </label>
             <input
                 type="text"
@@ -63,8 +77,13 @@
         <div id="noResults" class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-xl shadow-inner hidden">
             <p class="text-yellow-800 text-center font-medium">
                 入力された「困り感」に直接合致するヒントは見つかりませんでした。<br>
-                別の言葉で入力し直すか、より具体的な状況を学校にご相談ください。
+                別の言葉で入力し直すか、カテゴリを選択し直してください。
             </p>
+        </div>
+
+        <!-- まなクロ表記を追加 -->
+        <div class="text-xs text-gray-500 mt-8 text-right">
+            Produced by まなクロ
         </div>
     </div>
 
@@ -307,10 +326,28 @@
 
         // DOM要素の取得
         const difficultyInput = document.getElementById('difficultyInput');
+        const difficultySelect = document.getElementById('difficultySelect'); // 新しく追加
         const searchButton = document.getElementById('searchButton');
         const resultsDiv = document.getElementById('results');
         const accommodationsList = document.getElementById('accommodationsList');
         const noResultsDiv = document.getElementById('noResults');
+
+        // ページ読み込み時にプルダウンメニューを初期化
+        document.addEventListener('DOMContentLoaded', populateDifficultySelect);
+
+        function populateDifficultySelect() {
+            const uniqueDifficulties = new Set();
+            accommodationsData.forEach(data => {
+                uniqueDifficulties.add(data.difficulty);
+            });
+
+            uniqueDifficulties.forEach(difficulty => {
+                const option = document.createElement('option');
+                option.value = difficulty;
+                option.textContent = difficulty;
+                difficultySelect.appendChild(option);
+            });
+        }
 
         // 検索ボタンのクリックイベントリスナー
         searchButton.addEventListener('click', searchAccommodations);
@@ -322,6 +359,14 @@
             }
         });
 
+        // プルダウンメニューの変更イベントリスナー
+        difficultySelect.addEventListener('change', (event) => {
+            // プルダウンで選択された値をテキスト入力欄に反映し、検索を実行
+            difficultyInput.value = event.target.value;
+            searchAccommodations();
+        });
+
+
         function searchAccommodations() {
             const inputText = difficultyInput.value.trim().toLowerCase(); // 入力値を小文字にして空白を除去
 
@@ -332,7 +377,7 @@
 
             if (inputText === '') {
                 // 入力がない場合は何もしないか、メッセージを表示
-                noResultsDiv.querySelector('p').textContent = '困り感を何か入力してください。';
+                noResultsDiv.querySelector('p').textContent = '困り感を何か入力するか、カテゴリを選択してください。';
                 noResultsDiv.classList.remove('hidden');
                 return;
             }
@@ -342,7 +387,8 @@
 
             // データの中から入力されたキーワードに合致するものを探す
             accommodationsData.forEach(data => {
-                const isMatch = data.keywords.some(keyword => inputText.includes(keyword.toLowerCase()));
+                const isMatch = data.keywords.some(keyword => inputText.includes(keyword.toLowerCase())) ||
+                                (inputText === data.difficulty.toLowerCase()); // カテゴリ名自体が入力された場合もマッチ
                 if (isMatch) {
                     matchedDifficulties.add(data.difficulty);
                     data.accommodations.forEach(acc => foundAccommodations.add(acc));
@@ -375,10 +421,11 @@
                 });
             } else {
                 // 結果が見つからなかった場合
-                noResultsDiv.querySelector('p').textContent = '入力された「困り感」に直接合致するヒントは見つかりませんでした。\n別の言葉で入力し直すか、より具体的な状況を学校にご相談ください。';
+                noResultsDiv.querySelector('p').textContent = '入力された「困り感」に直接合致するヒントは見つかりませんでした。\n別の言葉で入力し直すか、カテゴリを選択し直してください。';
                 noResultsDiv.classList.remove('hidden');
             }
         }
     </script>
 </body>
 </html>
+
